@@ -7,14 +7,12 @@ import base64
 import io
 import os
 
-# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
     page_title="Simulador de ações municipais",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. CARGA DE DADOS E DEFINIÇÃO DE CAMINHOS UNIVERSAIS
 pasta_raiz = os.path.dirname(__file__)
 
 
@@ -36,12 +34,10 @@ def get_base64_image(nome_arquivo):
         return ""
 
 
-# Carregamento dos dados e logos
 df_mun, df_inic_atual, df_inic_prop = carregar_dados()
 logo_sebrae = get_base64_image("logo_sebrae.png")
 logo_pp = get_base64_image("logo_politicas_publicas.png")
 
-# 3. INTERFACE E ESTILIZAÇÃO CSS
 st.markdown(f'''
     <style>
         .stApp {{ margin-top: 70px; }}
@@ -100,7 +96,6 @@ def formata_reais(valor):
 ref_atual = df_inic_atual.set_index('INICIATIVA')['VALOR'].to_dict()
 pd.set_option('future.no_silent_downcasting', True)
 
-# --- SIDEBAR ---
 with st.sidebar:
     st.markdown(f'''
         <style>
@@ -191,7 +186,6 @@ with st.sidebar:
 
         st.markdown('---')
 
-        # GRÁFICO DE RADAR
         categorias = selec['EIXO'].tolist()
         valores = selec['PERCENTUAL'].tolist()
         n = len(categorias)
@@ -224,9 +218,7 @@ with st.sidebar:
         st.pyplot(fig)
 
 
-# --- ÁREA PRINCIPAL ---
 if options:
-    # 1. Inicialização do Session State
     if 'df_investido' not in st.session_state:
         st.session_state.df_investido = pd.DataFrame(columns=['INICIATIVA', 'SEBRAE/PR', 'MUNICIPIO', 'TOTAL'])
     if 'df_proposta' not in st.session_state:
@@ -235,11 +227,9 @@ if options:
 
     col_ctrl1, col_ctrl2 = st.columns([3, 1])
 
-    # 1. Inicialização de estados adicionais
     if 'mostrar_upload' not in st.session_state:
         st.session_state.mostrar_upload = False
 
-    # 2. BOTÕES DE CONTROLE LADO A LADO
     col_btn1, col_btn2 = st.columns([1, 1])
 
     with col_btn1:
@@ -248,13 +238,11 @@ if options:
 
     with col_btn2:
         if st.button('Redefinir', use_container_width=True):
-            # Em vez de DataFrame(), recriamos com a estrutura original
             st.session_state.df_investido = pd.DataFrame(columns=['INICIATIVA', 'SEBRAE/PR', 'MUNICIPIO', 'TOTAL'])
             st.session_state.df_proposta = pd.DataFrame(columns=['INICIATIVA', 'SOLUCAO', 'SUBSIDIO', 'VALOR_MUNICIPIO', 'VALOR'])
             st.session_state.mostrar_upload = False
             st.rerun()
 
-    # 3. ÁREA DE UPLOAD CONDICIONAL
     if st.session_state.mostrar_upload:
         st.info("Selecione o arquivo .csv exportado anteriormente (nomedomunicipio_proposta_salva.csv)")
         arquivo_csv = st.file_uploader("Escolha o arquivo", type="csv", label_visibility='collapsed')
@@ -273,7 +261,7 @@ if options:
 
                 st.session_state.mostrar_upload = False  # Fecha a área após carregar
                 st.rerun()
-    # --- 1. SEÇÃO: MONTANTE INVESTIDO ATUALMENTE ---
+
     st.subheader('Montante Investido Atualmente')
     with st.expander("➕ Lançar Investimento Atual", expanded=st.session_state.df_investido.empty):
         col_at_inic, col_at_val = st.columns([2, 1])
@@ -310,7 +298,7 @@ if options:
             f'<div style="display: flex; justify-content: flex-end; gap: 40px; background-color: #f0f2f6; padding: 5px 10px; border-radius: 0 0 10px 10px; margin-top: -20px; margin-bottom: 20px; border: 1px solid #d1d5db;"><span>TOTAL JÁ INVESTIDO:</span><span>Sebrae: <b>R$ {formata_reais(edicao_at["SEBRAE/PR"].sum())}</b></span><span>Município: <b>R$ {formata_reais(edicao_at["MUNICIPIO"].sum())}</b></span><span>Total: <b>R$ {formata_reais(edicao_at["TOTAL"].sum())}</b></span></div>',
             unsafe_allow_html=True)
 
-    # --- 2. SEÇÃO: PROPOSTA DE PARCERIA ---
+    
     st.subheader('Proposta de Parceria')
     with st.expander("➕ Adicionar Item na Proposta", expanded=st.session_state.df_proposta.empty):
         col_pr_inic, col_pr_sol = st.columns(2)
@@ -353,7 +341,7 @@ if options:
             f'<div style="display: flex; justify-content: flex-end; gap: 40px; background-color: #f0f2f6; padding: 5px 10px; border-radius: 0 0 10px 10px; margin-top: -20px; margin-bottom: 20px; border: 1px solid #d1d5db;"><span>TOTAL PROPOSTA:</span><span>Sebrae: <b>R$ {formata_reais(edicao_pr["SUBSIDIO"].sum())}</b></span><span>Município: <b>R$ {formata_reais(edicao_pr["VALOR_MUNICIPIO"].sum())}</b></span><span>Total: <b>R$ {formata_reais(edicao_pr["VALOR"].sum())}</b></span></div>',
             unsafe_allow_html=True)
 
-    # --- RODA-PÉ: TOTALIZADORES GERAIS ---
+    
     st.divider()
     df1_f, df2_f = st.session_state.df_investido.fillna(0), st.session_state.df_proposta.fillna(0)
     tot_g, tot_s, tot_m = df1_f['TOTAL'].sum() + df2_f['VALOR'].sum(), df1_f['SEBRAE/PR'].sum() + df2_f[
@@ -377,7 +365,7 @@ if options:
     </div>
     ''', unsafe_allow_html=True)
 
-    # --- EXPORTAÇÃO EXCEL E CSV ---
+
     st.divider()
     col_ex1, col_ex2 = st.columns(2)
     with col_ex1:
@@ -414,4 +402,5 @@ if options:
             [st.session_state.df_investido.assign(TIPO='ATUAL'), st.session_state.df_proposta.assign(TIPO='PROPOSTA')],
             ignore_index=True)
         st.download_button("Salvar proposta (.csv) 💾", data=df_csv.to_csv(index=False).encode('utf-8-sig'),
+
                            file_name=f"{options}_proposta_salva.csv", mime="text/csv", use_container_width=True)
